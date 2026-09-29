@@ -1,0 +1,1285 @@
+<!ver 4.41>
+<!DOCTYPE html> 
+<html> 
+  <head> 
+       <meta charset="utf-8"> 
+       <title>LABEL</title> 
+       <link rel="stylesheet" href="jquery.mobile-1.4.4.css">
+       <link rel="stylesheet"  href="jqm-icon-pack-fa.css" >
+       <script src="jquery.js"></script>
+       <script src="jquery.mobile-1.4.4.js"></script>
+       <script type="text/javascript" src="javascript/calendarDateInput.js"></script>
+
+       <link href="css/fontawesome.min.css" rel="stylesheet">
+       <script src="dist/sweetalert.min.js"></script> 
+       <link rel="stylesheet" type="text/css" href="dist/sweetalert.css">
+
+       <meta name="viewport" content="width=device-width, initial-scale=1">
+ </head> 
+
+
+
+<%
+   if !used('veq')
+      use veq alias veq in 0 shared
+   endif 
+
+   if !used("templbl")
+      use templbl alias templbl in 0 shared
+   endif
+   lnrtemplbl = 0
+   go top in templbl
+   do while !eof("templbl")
+      lnrtemplbl = lnrtemplbl + 1
+      skip in templbl
+   enddo
+
+lnsw=oRequest.querystring("sw")
+lcsh=oRequest.querystring("sh")
+lcsh=iif(isnull(lcsh),"0","1")
+
+*if val(lnsw)=600 && jika tablet toko
+%>
+
+<style>
+tbody {
+   font-size : 15px;	
+}
+
+.bl {
+   font-size : 20px !important;
+   font-weight : bold;
+   //background-color: #013220;
+   background-color: #6D5840 !important;
+}
+
+.mytable th{ 
+    border-bottom: 1px solid #00FFFF;
+    border-bottom-style: solid;
+    color : #00FFFF;
+    font-size:11pt;
+}
+
+
+.mytable tr{
+    border-bottom: 1px solid #404040;
+    font-size:10pt;
+}
+
+.mytable td{
+    vertical-align : middle;
+}
+
+.mytable tr:nth-child(even){
+    background-color: #303030;
+}
+
+.ui-controlgroup-horizontal .ui-controlgroup-controls .ui-btn {
+  font-size:80%;
+  margin-top:4px;
+}
+
+.mytomato {
+  color:tomato;
+  opacity:0.65;
+  font-size:30px;
+  margin-top:-4px !important;
+  margin-left:-2px !important;
+}
+
+.infofloat {
+    position: absolute;
+    font-size: 11px;
+    margin-left: 5px;
+    color: tomato;
+    z-index: 999;
+    width: 100px;
+    height: 20px;
+    top: 325px;
+    left: 93px;
+//  display: none;
+}
+
+.lblcam {
+    position: absolute;
+    font-size: 15px;
+    margin-left: 5px;
+    color: tomato;
+    z-index: 999;
+    width: 100px;
+    height: 20px;
+    top: 174px;
+    left: 195px;
+//  display: none;
+}
+
+.lblsave {
+    position: absolute;
+    font-size: 11px;
+    margin-left: 5px;
+    color: tomato;
+    z-index: 999;
+    width: 100px;
+    height: 20px;
+    top: 173px;
+    left: 239px;
+//  display: none;
+}
+
+.lblprint {
+    position: absolute;
+    font-size: 15px;
+    margin-left: 5px;
+    color: tomato;
+    z-index: 999;
+    width: 100px;
+    height: 20px;
+    top: 174px;
+    left: 288px;
+//  display: none;
+}
+
+.lblbcode {
+    position: absolute;
+    font-size: 11px;
+    margin-left: 5px;
+    color: tomato;
+    z-index: 999;
+    width: 100px;
+    height: 20px;
+    top: 172px;
+    left: 333px;
+//  display: none;
+}
+
+#myTable th {
+    position : sticky;
+    top : 0;
+
+    background-color:rgb(54,54,54);
+    border-bottom: 1px solid #00FFFF;
+    border-bottom-style: solid;
+    color : cyan;
+    font-weight:normal !important;
+    z-index:4;
+}
+
+#myTable tr:nth-child(even) {
+    background: rgb(192,183,172) !important;
+}
+
+#myTableku th {
+    position : sticky;
+    top : 0;
+
+    background-color:rgb(54,54,54);
+    border-bottom: 1px solid #00FFFF;
+    border-bottom-style: solid;
+    color : cyan;
+    font-weight:normal !important;
+    z-index:4;
+}
+
+#myTableku tbody {
+    font-size : 89% !important;
+}
+
+
+#manager-table {
+   max-height: 490px;
+   overflow-y: scroll;
+}
+
+#manager-table::-webkit-scrollbar {
+   background-color:transparent;
+}
+
+#myTable {
+  border-collapse : separate;
+  border-spacing : 0;
+  font-size: .9em;
+}
+
+#myTable tr {
+   font-size:.9em;
+}
+
+#induk {
+   overflow:hidden;
+}
+
+.theframe{
+    border-color: rgb(0,0,0,.6) !important;
+    border: groove;
+    width: 600px;
+    min-height:50px;
+}
+
+.isErr {
+	color: #FF7500 !important;
+}
+
+/* 1. Container setup */
+.res-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(410px, 1fr));
+    align-items: start; /* Prevents height stretching */
+    gap: 20px 200px;          /* Adds space between the columns */
+}
+
+/* 2. Child cleanup */
+#thedata, #thelook {
+    width: 600px;        /* Remove any fixed 600px widths */
+    min-height: 0;      /* Allows it to shrink to content height */
+}
+
+</style>
+<%*endif%>
+
+<body>
+
+<script language="javascript">
+muncul =1;
+clicklabel=false;
+var wclabel,wenota,wdlabel;
+
+<%
+lcPBarang=oRequest.querystring("bg")
+lcPTipe=oRequest.querystring("tp")
+lcPMerk=oRequest.querystring("mk")
+lcPVendor=oRequest.querystring("vn")
+
+lcPHbeli=oRequest.querystring("hb")
+lcPHbeli=iif(isNull(lcPHbeli),'',lcPHbeli)
+
+lcPHjual=oRequest.querystring("hj")
+lcPHjual=iif(isNull(lcPHjual),'',lcPHjual)
+
+lcPQty=oRequest.querystring("nq")
+lcPCetak=oRequest.querystring("nc")
+
+lcPAlert=oRequest.querystring("mer")
+lnPAlert=iif(isNull(lcPAlert),0,val(lcPAlert))
+%>
+
+$(document).on('pagebeforeshow', '#page1', function(){ 
+	
+	$( "#popupResult" ).popup({
+        	afteropen : function( event, ui ) {$('#filterTable-input').focus();},
+		afterclose: function( event, ui ) { 
+				if (clicklabel) {
+					clicklabel=false;
+					$('#txtBeli').focus();
+				}
+			    }
+	});
+
+});    
+
+function mysubmit(){
+	const myForm = document.getElementById('myForm');
+	document.pressed = "Simpan";
+	myForm.requestSubmit(); 
+}
+
+$( document ).ready(function() {
+   lookvpodata();
+   $('#txtrem').keypress(function(event) {
+        if (event.keyCode == 13) {
+            event.preventDefault();
+            mysubmit();
+        }
+   });
+});
+
+function getCookie(c_name)
+{
+var i,x,y,ARRcookies=document.cookie.split(";");
+for (i=0;i<ARRcookies.length;i++)
+  {
+  x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+  y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+  x=x.replace(/^\s+|\s+$/g,"");
+  if (x==c_name)
+    {
+    return unescape(y);
+    }
+  }
+}
+
+function setCookie(c_name,value,exdays)
+{
+var exdate=new Date();
+exdate.setDate(exdate.getDate() + exdays);
+var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+document.cookie=c_name + "=" + c_value;
+}
+
+function chk_tglinput()
+{
+
+var tglinput=getCookie("tglinputlbl");
+var lastivc=getCookie("lblnoivc");
+var lddate = new Date();
+var lcdate, xx1, lrdate, lcd1;
+
+xx1 = lddate.toISOString();
+lcdate = xx1.substring(0,4)+"-"+xx1.substring(5,7)+"-"+xx1.substring(8,10);
+lrdate =  ((tglinput!=null && tglinput!=""&&<%=iif(lnrtemplbl>0,"true","false")%>) ? tglinput : lcdate);
+
+document.getElementById("entrydate").value=lrdate;
+}
+
+function validatenumber(evt) {
+  var theEvent = evt || window.event;
+  var key = theEvent.keyCode || theEvent.which;
+  if (key!=13){
+  	key = String.fromCharCode( key );
+  	var regex = /^[0-9\b]+$/;    // allow only numbers [0-9] 
+  	if( !regex.test(key) ) {
+  	  theEvent.returnValue = false;
+    	  if(theEvent.preventDefault) theEvent.preventDefault();
+  	}
+  }
+}
+
+function testempty(cpar1)
+{
+  return (cpar1!=null) && (cpar1.trim()!='')
+}
+
+function OnSubmitForm()
+{
+var ik,myf;
+var ctest = String;
+var lcMerk = document.form.txtMerk.value.trim();
+var lcTipe = document.form.txtTipe.value.trim();
+var lcBarang = document.form.txtBarang.value.trim();
+var lcVendor = document.form.txtVendor.value.trim();
+var lcBeli = document.form.txtBeli.value.trim();
+var lcJual = document.form.txtJual.value.trim();
+var lcJumlah=document.form.txtJumlah.value.trim();
+var lcQCetak=document.form.txtQCetak.value.trim();
+var lcivc = document.form.txtIvc.value.trim().toUpperCase();
+var lcinv = document.form.txtInv.value.trim().toUpperCase();
+var hjblerr = false;
+
+lcJumlah = (lcJumlah.length==0?lcQCetak:lcJumlah);
+//lcivc = (((lcVendor=='993')||(lcivc.length==0))?'---':lcivc);
+
+
+if ((lcJual.trim().length+lcBeli.trim().length)>0) {
+   $.ajaxSetup({async:false});
+   $.get('isbjok.avfp',{ hjl: lcJual , hbl: lcBeli }, function(data) {
+ 	if (data.length==0){ 
+		$('#txtBeli').addClass('isErr'); 
+		$('#txtJual').addClass('isErr');
+		hjblerr = true;
+	}else{
+		$('#txtBeli').removeClass('isErr'); 
+		$('#txtJual').removeClass('isErr');
+	}
+	});
+   $.ajaxSetup({async:true});
+}
+
+if (lcMerk.length==0)
+{  lcMerk = document.form.txtMerk.placeholder.trim(); }
+if (lcTipe.length==0)
+{ lcTipe = document.form.txtTipe.placeholder.trim(); }
+if (lcBarang.length==0)
+{ lcBarang = document.form.txtBarang.placeholder.trim();}
+if (lcVendor.length==0)
+{ lcVendor = document.form.txtVendor.placeholder.trim();}
+
+ if (document.pressed == 'Simpan')
+ { 
+     ik = isNaN(document.form.txtVendor.value); 
+     if (ik==true)
+     {
+         swal({   title: "Isian Supplier harus berupa Angka",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;
+     }
+    else
+     {
+        if (lcVendor.length == 0)
+        { swal({   title: "Supplier Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else {  
+        if (lcBarang.length == 0)
+        { swal({   title: "Nama Barang Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else  { 
+        if (lcMerk.length == 0)
+        { swal({   title: "Merk Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else {
+        if (lcTipe.length == 0)
+        { swal({   title: "Tipe Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        if (lcBeli.length == 0)
+        { swal({   title: "Kode Beli Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else {
+        if (lcJual.length ==0)
+        { swal({   title: "Kode Jual Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+	else {
+        if (hjblerr)
+        { swal({   title: "Harga Beli dan Harga Jual Tidak Sesuai",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else {
+        if (lcQCetak.length ==0)
+        { swal({   title: "Jumlah Cetak Harus Diisi",   text: "",   type: "error",   confirmButtonText: "Ok" }); return false;}
+        else { 
+	 if ($('#nbBridge').is(':checked') && !nbSyncNonBukuBeforeSubmit()) { return false; }
+	 setCookie("tglinputlbl",document.form.entrydate.value,1);   
+	 setCookie("lblnoivc",document.form.txtIvc.value,1);   
+	 v1 = $('#txtJumlah').val();
+	 myf = (($('#fo').is(':checked')||(v1.indexOf('^')>=0))?8:0) + (($('#ns').is(':checked')||(v1.indexOf('&')>=0))?4:0) + (($('#np').is(':checked')||(v1.indexOf('*')>=0))?2:0) + (($('#nq').is(':checked')||(v1.indexOf('(')>=0))?1:0);
+	 myrem = $('#txtrem').val().replace(/\#/g, "|");
+	 document.form.action = "<%=JustPath(oProp.ScriptPath)+[/proseslbl]+oProp.Ext%>"+"?action_id=<%=JustPath(oProp.ScriptPath)+[/entrylbl]+oProp.Ext%>&proses_id=save&vendor="+lcVendor+"&Barang="+lcBarang+"&tipe="+lcTipe+"&jual="+lcJual+"&beli="+lcBeli+"&Jumlah="+lcJumlah+"&Cetak="+lcQCetak+"&Merk="+lcMerk+"&nowdate="+document.form.entrydate.value+"&myf="+myf+"&ivc="+lcivc+"&inv="+lcinv+"&buf="+$('#txtbuffer').val()+"&rem="+myrem+"&sh=<%=lcsh%>";
+        }}}}}}}
+   }
+ }
+ else
+ {
+	document.form.action = "<%=JustPath(oProp.ScriptPath)+[/rekaplblmobile]+oProp.Ext%>?sh=<%=lcsh%>";
+  }
+}
+
+$(document).bind('pageshow', function() {
+$($('.ui-page.ui-page-active form :input:visible')[1]).focus();
+});
+
+function myinfo(){
+var nowven;
+cBarang = ($('#txtBarang').val()?$('#txtBarang').val():$('#txtBarang').attr('placeholder'));
+cMerk   = ($('#txtMerk').val()?$('#txtMerk').val():$('#txtMerk').attr('placeholder'));
+cTipe   = ($('#txtTipe').val()?$('#txtTipe').val():$('#txtTipe').attr('placeholder'));
+
+  if (cBarang && cMerk && cTipe){
+     $.get('entrylbldata.avfp',{ barang : cBarang, merk : cMerk, tipe : cTipe }, function(data) {
+        if (data) {
+	   ar = data.split("~~~");
+	   $('#txtBeli').attr('placeholder',ar[0]);
+	   $('#txtJual').attr('placeholder',ar[1]);
+	   $('#txtInv').val(ar[2].trim());
+	   $('#txtbuffer').val((ar[3]==0?'':ar[3]));
+	   $('#txtrem').val(ar[4]);
+
+	   nowven = $('#txtVendor').val();
+	   nowven = ( (nowven.length==0)?( ($('#txtVendor').attr('placeholder').length==0)?"":$('#txtVendor').attr('placeholder')):nowven);
+	   if ((nowven.length==0)||(parseInt(nowven)!=parseInt(ar[5]))){
+           	$('#lastven').text(ar[5]);
+	   }else{
+           	$('#lastven').text('');
+	   };	
+
+ 	   t1 = $('#txtBeli').val().trim().toUpperCase();
+ 	   t2 = $('#txtBeli').attr('placeholder').trim();
+	   if ((t1!=t2) && (t1.length>0)){
+		$('#lblBeli').text($('#txtBeli').attr('placeholder'));
+	   }else{ 
+		$('#lblBeli').text("");
+	   };
+
+        }
+     });
+  }
+}
+
+function myinv(){
+$.get('entrylblinv.avfp',{ }, function(data) {
+  $('#theselect').empty();
+  $('#theselect').append(data).trigger('create');
+  $('#popupInv').popup('open');
+});
+}
+
+function getinvcode(){
+var hh1,ii;
+var mystr="";
+
+  $('#txtInv').val($("#combo3").val());
+  $('#popupInv').popup('close');
+  
+  return false;
+};
+
+function myloaddata(){
+ $.get('looklblrhpdata.avfp',{ lcedit: 1 }, function(data){
+	$('#thedata').empty();
+	$('#thedata').append(data).trigger('create');
+ });
+}
+
+function mysaverhp()
+{
+ $.get('lbltorhp.avfp',{}, function(){
+       myloaddata();
+ });
+//  window.location.replace("<%=JustPath(oProp.ScriptPath)+[/lbltorhp]+oProp.Ext%>?action_id=<%=JustPath(oProp.ScriptPath)+[/looklblrhp]+oProp.Ext%>");
+}
+
+function myhidden(){
+var norord = $('.eq');
+
+if (muncul) {
+   norord.hide();
+   $('#hidebut').buttonMarkup({ icon: "eye" })
+}else{
+   norord.show();
+   $('#hidebut').buttonMarkup({ icon: "eye-slash" })
+};
+muncul = (muncul?0:1); //toggle muncul
+};
+
+function onhbeli(){
+var t1, t2;
+ if ( ($('#txtBeli').val().length>0) && ( ($('#txtBeli').val().indexOf('*')>-1)  || ($('#txtBeli').val().indexOf('-')>-1) )  ) {
+	$.ajax({
+		url: 'get890259.avfp' ,// mandatory
+		data : { hbl: $('#txtBeli').val() },
+		type : 'get',
+		success: function(data) {
+			 $('#txtBeli').val(data);
+			 },
+		async:false // to make it synchronous
+	 	});
+ };
+ t1 = $('#txtBeli').val().trim().toUpperCase();
+ t2 = $('#txtBeli').attr('placeholder').trim();
+ if ((t1!=t2) && (t1.length>0)){
+	$('#lblBeli').text($('#txtBeli').attr('placeholder'));
+ }else{ 
+	$('#lblBeli').text("");
+ };
+}
+
+
+var NON_BUKU_API_BASE = window.NON_BUKU_API_BASE || 'http://127.0.0.1:8000/api/v1/non-buku/items';
+
+function nbAlert(message, type) {
+  if (typeof swal === 'function') {
+    swal({ title: message, text: '', type: type || 'info', confirmButtonText: 'Ok' });
+  } else {
+    alert(message);
+  }
+}
+
+function nbValue(selector, fallbackSelector) {
+  var el = $(selector);
+  var value = (el.val() || '').trim();
+
+  if (!value && fallbackSelector) {
+    value = ($(fallbackSelector).attr('placeholder') || '').trim();
+  }
+
+  return value.toUpperCase();
+}
+
+function nbSetValue(selector, value) {
+  $(selector).val(value || '').trigger('change');
+}
+
+function nbQtyAmount() {
+  var qty = nbValue('#txtJumlah');
+  var cetak = nbValue('#txtQCetak');
+  var amount = parseInt((qty || cetak || '1').replace(/[^0-9]/g, ''), 10);
+
+  return (!amount || amount < 1) ? 1 : amount;
+}
+
+function nbPayload() {
+  return {
+    barang: nbValue('#txtBarang', '#txtBarang'),
+    tipe: nbValue('#txtTipe', '#txtTipe'),
+    merk: nbValue('#txtMerk', '#txtMerk'),
+    amount: nbQtyAmount(),
+    alias: ($('#txtStock').val() || '').trim(),
+    pc: nbValue('#txtBeli'),
+    selling_price_code: nbValue('#txtJual'),
+    kode_supplier: nbValue('#txtVendor', '#txtVendor') || 'AVFP'
+  };
+}
+
+function nbValidatePayload(payload) {
+  var barangMax = parseInt($('#txtBarang').attr('maxlength') || '10', 10);
+  var tipeMax = parseInt($('#txtTipe').attr('maxlength') || '7', 10);
+  var merkMax = parseInt($('#txtMerk').attr('maxlength') || '5', 10);
+
+  if (!payload.barang || payload.barang.length > barangMax) {
+    nbAlert('Barang wajib diisi maksimal ' + barangMax + ' karakter.', 'error');
+    return false;
+  }
+
+  if (!payload.tipe || payload.tipe.length > tipeMax) {
+    nbAlert('Tipe wajib diisi maksimal ' + tipeMax + ' karakter.', 'error');
+    return false;
+  }
+
+  if (!payload.merk || payload.merk.length > merkMax) {
+    nbAlert('Merk wajib diisi maksimal ' + merkMax + ' karakter.', 'error');
+    return false;
+  }
+
+  return true;
+}
+
+function nbBridgeMark(on) {
+  var value = $('#txtJumlah').val() || '';
+
+  if (on && value.indexOf('~') < 0) {
+    $('#txtJumlah').val(value + '~');
+  }
+
+  if (!on) {
+    $('#txtJumlah').val(value.replace(/~/g, ''));
+  }
+}
+
+function nbSetBridgeChecked(on) {
+  $('#nbBridge').prop('checked', !!on);
+
+  try {
+    $('#nbBridge').checkboxradio('refresh');
+  } catch (e) {}
+
+  nbBridgeMark(!!on);
+}
+
+function nbSearchStock() {
+  var payload = nbPayload();
+
+  if (!nbValidatePayload(payload)) {
+    return;
+  }
+
+  nbSetBridgeChecked(true);
+
+  $.ajax({
+    url: NON_BUKU_API_BASE + '/search',
+    method: 'GET',
+    dataType: 'json',
+    data: {
+      barang: payload.barang,
+      tipe: payload.tipe,
+      merk: payload.merk
+    },
+    success: function(json) {
+      if (!json || !json.exists || !json.data) {
+        return;
+      }
+
+      if (json.data.pc || json.data.kode_modal) {
+        nbSetValue('#txtBeli', json.data.pc || json.data.kode_modal);
+        onhbeli();
+      }
+
+      if (json.data.selling_price_code || json.data.harga_jual_code) {
+        nbSetValue('#txtJual', json.data.selling_price_code || json.data.harga_jual_code);
+      }
+
+      if (json.data.alias || json.data.official_name) {
+        nbSetValue('#txtStock', json.data.alias || json.data.official_name);
+      }
+    },
+    error: function(xhr) {
+      if (xhr.status !== 404) {
+        nbAlert('Cari Stock gagal.', 'error');
+      }
+    }
+  });
+}
+
+function nbBridgeClicked() {
+  var isOn = $('#nbBridge').is(':checked');
+  nbBridgeMark(isOn);
+
+  if (isOn) {
+    nbSyncNonBuku();
+  }
+}
+
+function nbApplySyncResult(json) {
+  if (json && json.data) {
+    if (json.data.pc || json.data.kode_modal) {
+      nbSetValue('#txtBeli', json.data.pc || json.data.kode_modal);
+      onhbeli();
+    }
+
+    if (json.data.selling_price_code || json.data.harga_jual_code) {
+      nbSetValue('#txtJual', json.data.selling_price_code || json.data.harga_jual_code);
+    }
+
+    if (json.data.alias || json.data.official_name) {
+      nbSetValue('#txtStock', json.data.alias || json.data.official_name);
+    }
+  }
+}
+
+function nbSyncNonBuku() {
+  var payload = nbPayload();
+
+  if (!nbValidatePayload(payload)) {
+    return;
+  }
+
+  $.ajax({
+    url: NON_BUKU_API_BASE + '/sync',
+    method: 'POST',
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(payload),
+    success: function(json) {
+      nbApplySyncResult(json);
+      nbAlert('Non Buku Project sudah diperbarui.', 'success');
+    },
+    error: function(xhr) {
+      var message = 'Bridge Non Buku gagal.';
+
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        message = xhr.responseJSON.message;
+      }
+
+      nbAlert(message, 'error');
+      nbSetBridgeChecked(false);
+    }
+  });
+}
+
+function nbSyncNonBukuBeforeSubmit() {
+  var payload = nbPayload();
+  var ok = false;
+  var message = 'Bridge Non Buku gagal.';
+
+  if (!nbValidatePayload(payload)) {
+    return false;
+  }
+
+  $.ajax({
+    url: NON_BUKU_API_BASE + '/sync',
+    method: 'POST',
+    dataType: 'json',
+    contentType: 'application/json',
+    data: JSON.stringify(payload),
+    async: false,
+    success: function(json) {
+      nbApplySyncResult(json);
+      ok = true;
+    },
+    error: function(xhr) {
+      if (xhr.responseJSON && xhr.responseJSON.message) {
+        message = xhr.responseJSON.message;
+      }
+    }
+  });
+
+  if (!ok) {
+    nbAlert(message, 'error');
+    return false;
+  }
+
+  return true;
+}
+
+function myenota(){
+  if (!wenota || wenota.closed) {
+    wenota = window.open("entryrhp.avfp","_blank");
+  }
+  wenota.focus();
+};
+
+function mycarilabel(){
+
+  if (!wclabel || wclabel.closed) {
+    wclabel = window.open("carilabel1.avfp?sh=1","_blank");
+  }
+  wclabel.focus();
+};
+
+function mydaflabel(){
+
+  if (!wdlabel || wdlabel.closed) {
+    wdlabel = window.open("rekaplblmobile.avfp?sh=<%=lcsh%>","_blank");
+  }
+  wdlabel.focus();
+};
+
+
+$(document).on('pagebeforeshow', '#page1', function(){ 
+	$( "#popupEdit" ).popup({
+        	afteropen: function( event, ui ) { $('#txtEntry').select().focus();}
+	});
+	$( "#popupTgl" ).popup({
+        	afteropen: function( event, ui ) { $('#txtTgl').focus();}
+	});
+
+});    
+
+$(window).focus(function() {
+//    if (!document.hidden) {
+        myloaddata(); // Refresh the page when it gets focus
+//    }
+});
+
+function changeivc(lcven,lcivc,lcrecno){
+   $('#txtIvcOld').val(lcivc);
+   $('#txtVendor').val(lcven);
+   $('#txtEntry').val(lcivc);
+   $('#popupEdit').popup('open');
+
+}
+
+function changetgl(lcven,lcivc,lcrecno){
+var ctgl;
+   $('#txtIvcOld').val(lcivc);
+   $('#txtVendor').val(lcven);
+   ctgl = $('#tg'+lcrecno).text();
+   ctgl = ctgl.substring(6,10)+'-'+ctgl.substring(3,5)+'-'+ctgl.substring(0,2);
+   $('#txtTgl').val(ctgl);
+   $('#popupTgl').popup('open');
+}
+  
+function myupdateivc(){
+   jQuery.ajaxSetup({async:false});
+   $.get('editivcdata.avfp',{ ven: $('#txtVendor').val(), oivc : $('#txtIvcOld').val(), ivc: $('#txtEntry').val() }, function(data) {
+ 	$.get('looklblrhpdata.avfp',{ lcedit: 1 }, function(data){
+                $('#popupEdit').popup('close');
+		$('#thedata').empty();
+		$('#thedata').append(data).trigger('create');
+ 	});	
+   });
+   jQuery.ajaxSetup({async:true});
+
+   return false;
+}
+
+function myupdatetgl(){
+var tisi;
+   tisi = $('#txtTgl').val();
+   tisi = tisi.substring(8,10)+'/'+tisi.substring(5,7)+'/'+tisi.substring(0,4);
+   jQuery.ajaxSetup({async:false});
+   $.get('editivcdata.avfp',{ ven: $('#txtVendor').val(), oivc : $('#txtIvcOld').val(), tgl: tisi }, function(data) {
+ 	$.get('looklblrhpdata.avfp',{ lcedit: 1 }, function(data){
+                $('#popupTgl').popup('close');
+		$('#thedata').empty();
+		$('#thedata').append(data).trigger('create');
+ 	});	
+   });
+   jQuery.ajaxSetup({async:true});
+   return false;
+}
+
+function copytovendor(){
+	$('#txtVendor').val($('#lastven').text());
+	$('#lastven').text('');
+	lookvpodata()
+	$('#txtBeli').focus();
+
+}
+
+function openvpodata(){
+var curven, curph, nlven, tven;
+  curph = $('#txtVendor').attr('placeholder');
+  curven = (($('#txtVendor').val().trim().length>0)?$('#txtVendor').val().trim():((parseInt(curph)>0)?curph:''));
+  const date2 = new Date($('#entrydate').val());
+  const date1 = new Date($('#entrydate').val());
+  date1.setDate(date1.getDate() - 7);
+  tven = curven.toString();
+  nlven = parseInt(tven.substring(2,3));
+  nlven = ((nlven>6)?nlven-5:nlven);
+  tven = tven.substring(0,2)+nlven.toString();
+<%
+        go top in veq
+	do while !eof('veq')
+%>	
+	tven = ((tven=='<%=veq.vcasal%>')?'<%=veq.vcubah%>':tven);    // this is so spesific to Aneka Diesel Sinjai... hahaha
+<%
+           skip in veq
+        enddo
+%>
+  $.get('visualpolook.avfp',{ tgl2 : date2.toISOString().slice(0, 10), tgl1 : date1.toISOString().slice(0, 10), vendor : tven }, function(data) {
+		$('#resultgrid').empty();             
+		$('#resultgrid').append(data).trigger('create');
+		$('._nh').hide();
+		$('#popupResult').popup('open');
+	});
+}
+
+
+function lookvpodata(){
+var curven, curph, nlven, tven;
+  curph = $('#txtVendor').attr('placeholder');
+  curven = (($('#txtVendor').val().trim().length>0)?$('#txtVendor').val().trim():((parseInt(curph)>0)?curph:''));
+  const date2 = new Date($('#entrydate').val());
+  const date1 = new Date($('#entrydate').val());
+  date1.setDate(date1.getDate() - 7);
+  tven = curven.toString();
+  if (tven.length>0) {
+    nlven = parseInt(tven.substring(2,3));
+    nlven = ((nlven>6)?nlven-5:nlven);
+    tven = tven.substring(0,2)+nlven.toString();
+<%
+        go top in veq
+	do while !eof('veq')
+%>	
+	tven = ((tven=='<%=veq.vcasal%>')?'<%=veq.vcubah%>':tven);    // this is so spesific to Aneka Diesel Sinjai... hahaha
+<%
+           skip in veq
+        enddo
+%>
+    $.get('visualpolook.avfp',{ tgl2 : date2.toISOString().slice(0, 10), tgl1 : date1.toISOString().slice(0, 10), vendor : tven }, function(data) {
+		data = data.replace("myTable","myTableku");
+		$('#thelook').empty();             
+		$('#thelook').append(data).trigger('create');
+		$('._nh').hide();
+	});
+  }
+}
+
+function puttoentry(lcBrg, lcMrk, lcTp) {
+  if (lcBrg.trim().length>0) {
+	$('#txtBarang').val(lcBrg);
+	$('#txtMerk').val(lcMrk);
+	$('#txtTipe').val(lcTp);
+	myinfo();
+	if ($('.ui-popup-active').length > 0) {
+		clicklabel=true;
+		$('#popupResult').popup('close');
+	}else{
+		$('#txtBeli').focus();
+	}
+  }
+}
+
+function saveperjurnal(uidx,tven){
+var cjnl;
+    cjnl = $('#iv'+uidx).text().replace(/&nbsp;|\u00a0/g, '');
+    $.get('proseslbl.avfp',{ Proses_ID : "SAVELBL", ivc : cjnl, vendor : tven }, function(data) {
+//	alert(data);
+	myloaddata();
+	});
+}
+
+</script>
+
+<% if lcsh#'0' %>
+
+<div data-role="page" id="page1" data-theme="b"> 
+<div data-role="header" data-position="fixed"> 
+  <a href="javascript:mysubmit()" class="ui-btn ui-icon-check ui-btn-icon-notext ui-corner-all" data-ajax="false" title='Daftarkan Label'></a>
+<div class="ui-btn-left">
+</div>
+<div class="ui-btn-right">
+  <a href="javascript:mycarilabel()" class="ui-btn ui-icon-tag ui-btn-icon-notext ui-corner-all" data-ajax="false" title='Cari Label'></a>
+  <a href="javascript:mydaflabel()" class="ui-btn ui-icon-list-alt ui-btn-icon-notext ui-corner-all" data-ajax="false" title='Daftar Label'></a>
+  <span class="fa-stack fa-lg" style='margin-top:1px;cursor:pointer;' onclick="myenota()" title="Entry Nota Vendor"><i class="fa-solid fa-circle fa-stack-2x" style='color:#373737;'></i><i class="fa fa-stack-1x fa-solid fa-users-between-lines"></i></span>
+  <a href="javascript:mysaverhp()" class="ui-btn ui-icon-cloud-upload ui-btn-icon-notext ui-corner-all" title="Simpan Data Nota"></a>
+</div>
+<h1>Cetak Label (<span id="cntlbl"><%=lnrtemplbl%></span>)</h1>
+</div> 
+
+<%
+    ErrMsg=''
+    do case 
+         case lnPAlert=1
+                  ErrMsg = 'Kode Harga Beli Salah !!'
+         case lnPAlert=2
+                  ErrMsg = 'Kode Harga Jual Salah !!'
+         case lnPAlert=3
+                  ErrMsg = 'Ada Kesalahan Data !!'
+    endcase
+ %>
+<%
+if !empty(ErrMsg)
+
+%>
+<script language="javascript">
+swal({   title: "<%=ErrMsg%>",   text: "",   type: "error",   confirmButtonText: "Ok" });
+</script>
+<%
+    endif
+%>
+
+
+<form name="form" id="myForm" method="post"  data-ajax ="false" onsubmit="return OnSubmitForm();" autocomplete="off">
+<div data-role="main" class="ui-content" >
+<div class='ui-grid-a'>
+<div class='ui-block-a' style='max-width:600px;'>
+<table style="text-align: left; width: 740px; height: 125px;" border="0" cellpadding="1" cellspacing="0">
+<tbody>
+<tr>
+<td style="height: 25px;<%=iif(lnrtemplbl>0,'','color:red;')%>">Tanggal</td>
+<td style="height: 25px;">
+<div class="ui-block-b" style="width:40%">
+<%    lcdate=dtos(date()) %>
+     <input type="date" name="entrydate" id="entrydate" value="<%=left(lcdate,4)+'-'+substr(lcdate,5,2)+'-'+right(lcdate,2)%>" onchange="lookvpodata()" />
+</div>
+<script>chk_tglinput()</script>
+</td>
+</tr>
+
+
+<tr>
+<td style="height: 25px;color:#64e764">Nota #</td>
+<td style="height: 25px;">
+<div class="ui-grid-a">
+<div class="ui-block-a" style="margin-left:2px;width:50%">
+<input name="txtIvc" id="txtIvc" style="text-transform:uppercase;" maxlength="15" value="" size="15" placeholder="">
+<input name="txtIvcOld" id="txtIvcOld" style="display:none">
+</div></div>
+</td>
+</td>
+</tr>
+<script>
+<% if lnrtemplbl>0 %>
+  ccc = getCookie("lblnoivc");
+  document.getElementById("txtIvc").value=((ccc!=null)?ccc:"");
+<% endif %>
+</script>
+
+
+<tr>
+<td style="width: 70px; height: 25px;">Supplier</td>
+<td style="width: 247px; height: 25px;">
+<div class="ui-grid-a" >
+<div class="ui-block-a" style="width:80px;margin-left:4px;">
+	<input type="tel" name="txtVendor" id="txtVendor"  maxlength="3" onKeyPress="validatenumber(event);" placeholder="<%=iif(isnull(lcPVendor),'',lcPVendor)%>" data-clear-btn="true" onchange="lookvpodata()">
+</div>
+<div class="ui-block-b" style="width:70%;margin-left:5px;">
+<fieldset data-role="controlgroup" data-type="horizontal" style='margin-top:5px'; >
+	<input type="checkbox" id="fo" name="fo" data-mini="true" tabindex=-1>
+	<label for="fo" title='Minta Foto Barang'>
+	<span class="fa-stack" style='cursor:pointer;'><i class="fa-solid fa-camera" style='color:white;font-size:22px;'></i></span>
+	</label>
+	<input type="checkbox" id="ns" name="ns" data-mini="true" tabindex=-1>
+	<label for="ns" title='Jangan Simpan Label setelah cetak'>
+	<span class="fa-stack" style='cursor:pointer;'><i class="fa-solid fa-floppy-disk fa-stack-1x" style='color:white;font-size:17px;'></i><i class="fa-solid fa-ban fa-stack-2x mytomato"></i></span>
+	</label>
+	<input type="checkbox" id="np" name="np" data-mini="true" tabindex=-1>
+	<label for="np" title='Jangan Cetak Label'>
+	<span class="fa-stack" style='cursor:pointer;'><i class="fa-solid fa-print fa-stack-1x" style='color:white;font-size:17px;'></i><i class="fa-solid fa-ban fa-stack-2x mytomato"></i></span>
+	</label>
+	<input type="checkbox" id="nq" name="nq" data-mini="true" tabindex=-1>
+	<label for="nq" title='Jangan Cetak QRCode'>
+	<span class="fa-stack" style='cursor:pointer;'><i class="fa-solid fa-barcode fa-stack-1x" style='color:white;font-size:17px;'></i><i class="fa-solid fa-ban fa-stack-2x mytomato"> style=</i></span>
+	</label>
+	<input type="checkbox" id="nbBridge" name="nbBridge" data-mini="true" tabindex=-1 onchange="nbBridgeClicked()">
+	<label for="nbBridge" title='Kirim ke Non Buku Project'>
+	<span class="fa-stack" style='cursor:pointer;'><i class="fa-solid fa-file-lines fa-stack-1x" style='color:white;font-size:17px;'></i><i class="fa-solid fa-arrows-rotate fa-stack-2x" style='color:#ffd75a;font-size:13px;'></i></span>
+	</label>
+</fieldset>
+</div>
+</div>
+</td>
+<td style="width:200px;height:25px;"></td>
+</tr>
+
+<tr>
+<td style="height: 25px;">Barang / Merk</td>
+<td style="height: 25px;">
+<div class="ui-grid-b">
+<div class="ui-block-a" style="width:145px;margin-left:2px;">
+	<input type="text" name="txtBarang" id="txtBarang" style="text-transform:uppercase;" maxlength="10" value=""  placeholder="<%=iif(isnull(lcPBarang),'',lcPBarang)%>" data-clear-btn="true" >
+</div>
+<div class="ui-block-b" style="width:2%"></div>
+<div class="ui-block-c" style="width:135px">
+	<input type="text" name="txtMerk" id="txtMerk" style="text-transform:uppercase;" maxlength="5" value="" placeholder="<%=iif(isnull(lcPMerk),'',lcPMerk)%>" data-clear-btn="true" >
+</div>
+</td>
+</tr>
+
+<tr>
+<td style="width: 61px; height: 39px;">Tipe</td>
+<td style="width: 447px; height: 39px;" >
+<div  class="ui-grid-b" >
+<div class="ui-block-a" style="width:120px;margin-top:.2em;margin-left:2px;">
+ <input name="txtTipe" id="txtTipe" style="text-transform:uppercase;" maxlength="7" value="" size="7"  placeholder="<%=iif(isnull(lcPTipe),'',lcPTipe)%>" data-clear-btn="true" >
+</div>
+<div class="ui-block-b" style="width: 39px;margin-top: -2px;">
+ <a href="javascript:myinfo()" style="margin-top:15px;" class="ui-btn ui-icon-search ui-btn-icon-notext ui-corner-all" ></a>
+</div>
+<div lcass="ui-block-c" style="margin-top: 18px;">
+<span style='color:gray;cursor:pointer;margin-left:3px;' id='lastven' title="Klik untuk salin ke Isian Supplier" onclick="copytovendor()"></span>
+</div>
+</div>
+</td>
+
+<tr>
+<td style="width: 61px; height: 39px;">Beli / Jual</td>
+
+<td style="height: 25px;">
+<div class="ui-grid-b">
+<div class="ui-block-a" style="width:35%;margin-left:2px;">
+<input name="txtBeli" id="txtBeli" style="text-transform:uppercase;color:<%=iif(lnPAlert=1 .or. lnPAlert=3,'#FF7500','white')%>" maxlength="20" value="<%=iif(lnPAlert>0,lcPHBeli,'')%>" size="20"  data-clear-btn="true" placeholder="" onchange="onhbeli()">
+</div>
+<div class="ui-block-b" style="width:5%"> </div>
+<div class="ui-block-c" style="width:35%">
+<input name="txtJual" id="txtJual" style="text-transform:uppercase;color:<%=iif(lnPAlert=2 .or. lnPAlert=3,'#FF7500','white')%>" maxlength="8" value="<%=iif(lnPAlert>0,lcPHJual,'')%>" size="8" data-clear-btn="true" placeholder="" >
+</div>
+</div>
+</td>
+
+</tr>
+
+
+<tr>
+<td style="width: 61px; height: 39px;">Cetak / (QtyBrg)</td>
+<td style="height: 39px;">
+<div  class='ui-grid-c'>
+<div  class="ui-block-a" style="width:25%;margin-left:2px;"><input type="tel" name="txtQCetak" id="txtQCetak" value="<%=iif(lnPAlert>0,lcPCetak,'')%>" maxlength="4" pattern="[\s|-,0-9]{1,3}" onKeyPress="validatenumber(event);" data-clear-btn="true"  /></div>
+<div  class="ui-block-b" style="width:10%;text-align:center;margin-top: 1em;">(</div>
+<div  class="ui-block-c" style="width:25%;"><input type="tel" name="txtJumlah" id="txtJumlah" value="<%=iif(lnPAlert>0,lcPQty,'')%>" maxlength="4" pattern="[\s|-,0-9]{1,3}" data-clear-btn="true" title="Sisipkan '*' supaya label tidak tercetak"/></div>
+<div  class="ui-block-d" style="width:10%;text-align:center;margin-top: 1em;">)</div>
+</div>
+</td>
+</tr>
+
+<tr>
+<td style="width: 61px; height: 39px;">Buffer / Remark</td>
+<td style="height: 39px;">
+<div class="ui-grid-c">
+<div class="ui-block-a" style="width:80px;margin-left:2px;">
+<input type="tel" name="txtbuffer" id="txtbuffer" value="" maxlength="3" pattern="[\s|-,0-9]{1,3}" onKeyPress="validatenumber(event);" data-clear-btn="true" />
+</div>
+<div class="ui-block-b" style="width:10px"></div>
+<div class="ui-block-c" style="width:360px;margin-left:2px;">
+<textarea name="txtrem" id="txtrem" value="" style="text-transform:uppercase;max-height:3em !important;" maxlength="60" data-clear-btn="true" ></textarea>
+</div>
+</td>
+</tr>
+
+
+<tr>
+<td style="height: 25px;color:#64e764">Inven #</td>
+<td style="height: 25px;">
+<div class="ui-grid-b">
+  <div class="ui-block-a" style="margin-left:2px;width:50%">
+   <input name="txtInv" id="txtInv" style="text-transform:uppercase;" maxlength="20" value="" size="20" placeholder="" tabindex=-1 readonly >
+  </div>
+  <div class="ui-block-b">
+    <a href="javascript:myinv()" style="margin-top:-9px;" class="ui-btn ui-icon-search ui-btn-icon-notext ui-corner-all" ></a>
+  </div></div>
+</td>
+</td>
+</tr>
+
+<tr>
+<td style="height: 25px;color:#ffd75a">Stock</td>
+<td style="height: 25px;">
+<div class="ui-grid-b">
+  <div class="ui-block-a" style="margin-left:2px;width:50%">
+   <input name="txtStock" id="txtStock" style="text-transform:uppercase;" maxlength="60" value="" size="20" placeholder="" autocorrect="off" autocomplete="off">
+  </div>
+  <div class="ui-block-b">
+    <a href="javascript:nbSearchStock()" style="margin-top:-9px;background:#ffd75a;border-color:#ffd75a;color:#111;" class="ui-btn ui-icon-search ui-btn-icon-notext ui-corner-all" title="Cari Stock Non Buku"></a>
+  </div></div>
+</td>
+</tr>
+
+</tbody>
+</table>
+<br>
+
+<table style="text-align: left; width:380px; height: 20px;" border="0" cellpadding="3" cellspacing="1">
+<thead></thead><tr></tr>
+<tbody>
+<tr>
+<td style="text-align: center; height: 39px;">
+<input type="submit" id="btSimpan" onclick="document.pressed='Simpan'" value="Daftarkan" data-icon="check" data-iconpos="top" data-mini="true" data-inline="true">
+</td>	    
+</tr>
+</table>
+
+</div>
+
+<div class='ui-block-b'>
+  <div class="res-container">
+     <td><div id='thedata' class='theframe' ></div></td>
+     <td><div id='thelook' class='theframe' ></div></td>
+  </div>
+</div>
+
+</div>
+</form>
+<script>
+myloaddata();
+</script>
+<br>
+
+<div class="infofloat">
+<span id="lblBeli"></span>
+</div>
+
+<div class="lblcam">
+<span>^</span>
+</div>
+
+<div class="lblsave">
+<span>&</span>
+</div>
+
+<div class="lblprint">
+<span>*</span>
+</div>
+
+<div class="lblbcode">
+<span>)</span>
+</div>
+
+
+
+<% endif %>
+
+<div data-role="popup" id="popupInv" data-transition='fade'  data-theme="b" class="ui-corner-all" style='background:#555500;text-shadow: 0 0 0;' >
+<form id="FpopupInv" name="FpopupInv" onsubmit='return getinvcode();'>
+<div style="padding:10px 20px;overflow-y:auto;height:210px;">
+<div id='theselect'>
+</div>
+</div>
+<button type="submit" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check" style="width:100px;margin: 0 auto;">Pilih</button>
+&nbsp;
+&nbsp;
+<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right" style="margin-top:-16px;margin-right:-16px;">Close</a>
+</div>
+</form>
+</div>
+
+<div data-role="popup" id="popupEdit" data-theme="a" class="ui-corner-all" style='background:rgba(211,211,211); text-shadow: 0 0 0;' data-dismissible="false" >
+<form id="FpopupEdit" name="FpopupEdit" onsubmit='return myupdateivc();' style='width:320px;'>
+<div style="padding:10px 20px;">
+<div class="ui-grid-a" style="width:100%;;">
+<div class="ui-block-a" style="width:20%;margin-top:1em;"><label id='mylabel'>Ivc#:</label></div>
+<div class="ui-block-b" style="width:70%;"><input type="text" name="txtEntry" id="txtEntry" onfocus='this.select();' style="text-transform:uppercase;" maxlength="15" value=""   data-clear-btn="true" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+</div>
+<input type="hidden" name="txtId" id="txtId" value="">
+<input type="hidden" name="txtVendor" id="txtVendor" value="">
+<input type="hidden" name="txtIvc" id="txtIvc" value="">
+<button type="submit" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Update</button>
+<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right" style="margin-top:-16px;margin-right:-16px;">Close</a>
+</div>
+</form>
+</div>
+
+<div data-role="popup" id="popupTgl" data-theme="a" class="ui-corner-all" style='background:rgba(211,211,211); text-shadow: 0 0 0;' data-dismissible="false" >
+<form id="FpopupTgl" name="FpopupTgl" onsubmit='return myupdatetgl();' style='width:300px;'>
+<div style="padding:10px 20px;">
+<div class="ui-grid-a" style="width:100%;;">
+<div class="ui-block-a" style="width:30%;margin-top:1em;">Tgl.Nota:</div>
+<div class="ui-block-b" style="width:65%;"><input type="date" name="txtTgl" id="txtTgl" style="text-transform:uppercase;" maxlength="20" value="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></div>
+</div>
+<button type="submit" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check">Update</button>
+<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right" style="margin-top:-16px;margin-right:-16px;">Close</a>
+</div>
+</form>
+</div>
+
+<div data-role="popup" id="popupResult" data-theme="a" class="ui-corner-all" style='background:rgba(211,211,211); text-shadow: 0 0 0;'  >
+<form id="FpopupResult" name="FpopupResult" style='width:650px;'>
+<div style="padding:10px 20px;overflow-y:scroll;height:550px;">
+   <div id='resultgrid'>
+    </div>
+</div>
+<a href="#" data-rel="back" class="ui-btn ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right" style="margin-top:-16px;margin-right:-16px;">Close</a>
+</form>
+</div>
+
+<div data-role="footer" data-position="fixed">
+<h4>&copy; Aneka Diesel Sinjai</h4>
+</div> 
+</div>
+</body></html>

@@ -1,0 +1,189 @@
+<!--
+Non Buku Project AVFP bridge snippet.
+
+Paste the <tr> block directly below the existing Inven # row.
+Paste the checkbox block beside the existing nq barcode checkbox.
+Paste the <script> block near the other page scripts.
+
+Set NON_BUKU_API_BASE to your Laravel server address.
+Example LAN address:
+http://192.168.1.116:8000/api/v1/non-buku/items
+-->
+
+<!-- Stock / Alias field: paste below the Inven # <tr> -->
+<tr>
+  <td style="height: 25px;color:#ffd75a">Stock</td>
+  <td style="height: 25px;">
+  <div class="ui-grid-b">
+    <div class="ui-block-a" style="margin-left:2px;width:50%">
+      <div class="ui-input-text ui-body-inherit ui-corner-all ui-shadow-inset"><input name="txtStock" id="txtStock" style="text-transform:uppercase;" maxlength="60" value="" size="20" placeholder="" autocorrect="off" autocomplete="off"></div>
+    </div>
+    <div class="ui-block-b">
+      &nbsp;&nbsp;&nbsp;&nbsp;<a href="javascript:nbSearchStock()" style="margin-top:-9px;background:#ffd75a;border-color:#ffd75a;color:#111;" class="ui-btn ui-icon-search ui-btn-icon-notext ui-corner-all"></a>
+    </div></div>
+  </td>
+</tr>
+
+<!-- Bridge button: paste beside the existing nq checkbox block -->
+<div class="ui-checkbox ui-mini"><label for="nbBridge" title="Kirim ke Non Buku Project" class="ui-btn ui-corner-all ui-btn-inherit ui-checkbox-off ui-last-child">
+  <span class="fa-stack" style="cursor:pointer;"><i class="fa-regular fa-file-lines fa-stack-1x" style="color:white;font-size:17px;"></i><i class="fa-solid fa-arrows-rotate fa-stack-2x" style="color:#ffd75a;font-size:13px;"></i></span>
+  </label><input type="checkbox" id="nbBridge" name="nbBridge" data-mini="true" tabindex="-1" onchange="nbBridgeClicked()"></div>
+
+<script>
+var NON_BUKU_API_BASE = 'http://127.0.0.1:8000/api/v1/non-buku/items';
+
+function nbFirstValue(ids) {
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el && el.value !== undefined) {
+      return (el.value || '').trim().toUpperCase();
+    }
+  }
+  return '';
+}
+
+function nbSetValue(ids, value) {
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) {
+      el.value = value || '';
+      try {
+        if (window.jQuery) {
+          jQuery(el).trigger('change');
+        }
+      } catch (e) {}
+      return true;
+    }
+  }
+  return false;
+}
+
+function nbReadPayload() {
+  var qty = nbFirstValue(['qtybrg', 'txtQtyBrg', 'qty']);
+  var cetak = nbFirstValue(['cetak', 'txtCetak']);
+  var amount = parseInt((qty || cetak || '1').replace(/[^0-9]/g, ''), 10);
+
+  if (!amount || amount < 1) {
+    amount = 1;
+  }
+
+  return {
+    barang: nbFirstValue(['barang', 'txtBrg', 'txtBarang']),
+    tipe: nbFirstValue(['tipe', 'txtTipe']),
+    merk: nbFirstValue(['merk', 'txtMerk']),
+    amount: amount,
+    alias: nbFirstValue(['txtStock']),
+    pc: nbFirstValue(['txtBeli']),
+    kode_supplier: nbFirstValue(['txtInv']) || 'AVFP'
+  };
+}
+
+function nbBridgeMark(on) {
+  var qty = document.getElementById('qtybrg') || document.getElementById('txtQtyBrg') || document.getElementById('qty');
+  if (!qty) {
+    return;
+  }
+
+  var value = qty.value || '';
+  if (on && value.indexOf('~') === -1) {
+    qty.value = value + '~';
+  }
+  if (!on) {
+    qty.value = value.replace(/~/g, '');
+  }
+}
+
+function nbSearchStock() {
+  var payload = nbReadPayload();
+
+  if (!payload.barang || !payload.tipe || !payload.merk) {
+    alert('Barang, tipe, dan merk wajib diisi.');
+    return;
+  }
+
+  var params = new URLSearchParams({
+    barang: payload.barang,
+    tipe: payload.tipe,
+    merk: payload.merk
+  });
+
+  fetch(NON_BUKU_API_BASE + '/search?' + params.toString(), {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' }
+  })
+    .then(function(response) {
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error('Search gagal.');
+      }
+      return response.json();
+    })
+    .then(function(json) {
+      if (!json || !json.exists || !json.data) {
+        return;
+      }
+
+      nbSetValue(['txtBeli'], json.data.pc || json.data.kode_modal || '');
+      nbSetValue(['txtStock'], json.data.alias || json.data.official_name || '');
+    })
+    .catch(function(error) {
+      alert(error.message || 'Search gagal.');
+    });
+}
+
+function nbBridgeClicked() {
+  var checkbox = document.getElementById('nbBridge');
+  var isOn = !!(checkbox && checkbox.checked);
+  nbBridgeMark(isOn);
+
+  if (isOn) {
+    nbSyncNonBuku();
+  }
+}
+
+function nbSyncNonBuku() {
+  var payload = nbReadPayload();
+
+  if (!payload.barang || payload.barang.length > 10) {
+    alert('Barang wajib diisi maksimal 10 karakter.');
+    return;
+  }
+  if (!payload.tipe || payload.tipe.length > 7) {
+    alert('Tipe wajib diisi maksimal 7 karakter.');
+    return;
+  }
+  if (!payload.merk || payload.merk.length > 4) {
+    alert('Merk wajib diisi maksimal 4 karakter.');
+    return;
+  }
+
+  fetch(NON_BUKU_API_BASE + '/sync', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  })
+    .then(function(response) {
+      if (!response.ok) {
+        return response.json().then(function(json) {
+          throw new Error(json.message || 'Bridge gagal.');
+        });
+      }
+      return response.json();
+    })
+    .then(function(json) {
+      if (json && json.data) {
+        nbSetValue(['txtBeli'], json.data.pc || json.data.kode_modal || payload.pc || '');
+        nbSetValue(['txtStock'], json.data.alias || payload.alias || json.data.official_name || '');
+      }
+      alert('Non Buku Project sudah diperbarui.');
+    })
+    .catch(function(error) {
+      alert(error.message || 'Bridge gagal.');
+    });
+}
+</script>
