@@ -57,15 +57,14 @@
                         <tr>
                             <td class="px-6 py-4" data-label="{{ __('messages.alias_name') }}">
                                 <div class="font-semibold text-stone-900">{{ $masterItem->alias_name }}</div>
-                                <div class="mt-1 text-xs text-stone-500">{{ $masterItem->official_name }} · {{ $masterItem->sku }}</div>
                             </td>
-                            <td class="px-6 py-4 text-stone-600" data-label="{{ __('messages.barang') }}"><span class="items-table__pill">{{ $masterItem->barang }}</span></td>
+                            <td class="px-4 py-4 text-stone-600" data-label="{{ __('messages.barang') }}">{{ $masterItem->barang }}</td>
                             <td class="px-6 py-4 text-stone-600" data-label="{{ __('messages.merk') }}">{{ $masterItem->merk }}</td>
                             <td class="px-6 py-4 text-stone-600" data-label="{{ __('messages.tipe') }}">{{ $masterItem->tipe }}</td>
-                            <td class="px-6 py-4 font-medium text-stone-900" data-label="{{ __('messages.selling_price') }}">{{ \App\Support\Currency::rupiah($masterItem->selling_price) }}</td>
+                            <td class="items-table__price px-6 py-4 font-medium text-stone-900" data-label="{{ __('messages.selling_price') }}">{{ \App\Support\Currency::rupiah($masterItem->selling_price) }}</td>
                             <td class="px-6 py-4" data-label="{{ __('messages.status') }}">
-                                <span class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold {{ $masterItem->is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-600' }}">
-                                    <span class="size-1.5 rounded-full {{ $masterItem->is_active ? 'bg-emerald-400' : 'bg-stone-400' }}"></span>
+                                <span class="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold {{ $masterItem->is_active ? 'app-positive-badge' : 'border-stone-200 bg-stone-100 text-stone-600' }}">
+                                    <span class="size-1.5 rounded-full {{ $masterItem->is_active ? 'app-positive-dot' : 'bg-stone-400' }}"></span>
                                     {{ $masterItem->is_active ? __('messages.active') : __('messages.inactive') }}
                                 </span>
                             </td>

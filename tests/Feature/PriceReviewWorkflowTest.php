@@ -94,6 +94,47 @@ class PriceReviewWorkflowTest extends TestCase
         $this->assertCount(0, PriceHistory::all());
     }
 
+    public function test_price_handler_can_batch_review_only_filled_prices(): void
+    {
+        $priceHandler = $this->createUserWithRole(Role::PRICE_HANDLER);
+        $firstItem = MasterItem::factory()->create(['selling_price' => 500000]);
+        $secondItem = MasterItem::factory()->create(['selling_price' => 700000]);
+        $firstTask = PriceReviewTask::query()->create([
+            'master_item_id' => $firstItem->id,
+            'status' => PriceReviewTask::STATUS_OPEN,
+            'current_selling_price' => 500000,
+        ]);
+        $secondTask = PriceReviewTask::query()->create([
+            'master_item_id' => $secondItem->id,
+            'status' => PriceReviewTask::STATUS_OPEN,
+            'current_selling_price' => 700000,
+        ]);
+
+        $response = $this->actingAs($priceHandler)->post(route('price-review-tasks.batch-review'), [
+            'reviews' => [
+                $firstTask->id => ['new_selling_price' => '650.000'],
+                $secondTask->id => ['new_selling_price' => ''],
+            ],
+        ]);
+
+        $response->assertRedirect(route('price-review-tasks.index', ['status' => PriceReviewTask::STATUS_OPEN]));
+
+        $firstTask->refresh();
+        $secondTask->refresh();
+        $firstItem->refresh();
+        $secondItem->refresh();
+
+        $this->assertSame(PriceReviewTask::STATUS_REVIEWED, $firstTask->status);
+        $this->assertSame(PriceReviewTask::STATUS_OPEN, $secondTask->status);
+        $this->assertSame('650000.00', (string) $firstItem->selling_price);
+        $this->assertSame('700000.00', (string) $secondItem->selling_price);
+        $this->assertDatabaseHas('price_histories', [
+            'master_item_id' => $firstItem->id,
+            'previous_price' => 500000,
+            'new_price' => 650000,
+        ]);
+    }
+
     public function test_invoice_handler_cannot_access_price_review_pages(): void
     {
         $invoiceHandler = $this->createUserWithRole(Role::INVOICE_HANDLER);

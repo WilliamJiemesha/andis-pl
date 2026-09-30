@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PriceReviewTask\ReviewPriceTaskRequest;
 use App\Models\PriceHistory;
 use App\Models\PriceReviewTask;
+use App\Models\Role;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PriceReviewTaskController extends Controller
@@ -48,25 +50,82 @@ class PriceReviewTaskController extends Controller
     public function review(ReviewPriceTaskRequest $request, PriceReviewTask $priceReviewTask): RedirectResponse
     {
         $validated = $request->validated();
+        $priceChanged = $this->completeReview(
+            $priceReviewTask,
+            (float) $validated['new_selling_price'],
+            $request->user()->id,
+            $validated['review_note'] ?? null,
+        );
+
+        return redirect()
+            ->route('price-review-tasks.show', $priceReviewTask)
+            ->with('status', $priceChanged
+                ? __('messages.price_review_updated_price')
+                : __('messages.price_review_kept_price'));
+    }
+
+    public function batchReview(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reviews' => ['nullable', 'array'],
+            'reviews.*.new_selling_price' => ['nullable', 'string'],
+        ]);
+
+        $reviewRows = collect($validated['reviews'] ?? [])
+            ->map(fn (array $row) => preg_replace('/\D+/', '', (string) ($row['new_selling_price'] ?? '')))
+            ->filter(fn (?string $price) => filled($price))
+            ->map(fn (string $price) => (float) $price);
+
+        if ($reviewRows->isEmpty()) {
+            return redirect()
+                ->route('price-review-tasks.index', ['status' => PriceReviewTask::STATUS_OPEN])
+                ->with('status', __('messages.price_review_batch_empty'));
+        }
+
+        $tasks = PriceReviewTask::query()
+            ->with('masterItem')
+            ->whereIn('id', $reviewRows->keys())
+            ->where('status', PriceReviewTask::STATUS_OPEN)
+            ->get()
+            ->keyBy('id');
+
+        DB::transaction(function () use ($reviewRows, $tasks, $request): void {
+            foreach ($reviewRows as $taskId => $newPrice) {
+                $task = $tasks->get((int) $taskId);
+
+                if (! $task) {
+                    continue;
+                }
+
+                $this->completeReview($task, $newPrice, $request->user()->id, null);
+            }
+        });
+
+        return redirect()
+            ->route('price-review-tasks.index', ['status' => PriceReviewTask::STATUS_OPEN])
+            ->with('status', __('messages.price_review_batch_completed', ['count' => $tasks->count()]));
+    }
+
+    private function completeReview(PriceReviewTask $priceReviewTask, float $newPrice, int $userId, ?string $reviewNote): bool
+    {
         $masterItem = $priceReviewTask->masterItem;
         $previousPrice = $masterItem->selling_price;
-        $newPrice = (float) $validated['new_selling_price'];
         $priceChanged = $previousPrice === null
-            ? $validated['new_selling_price'] !== null
+            ? true
             : (float) $previousPrice !== $newPrice;
 
         if ($priceChanged) {
             $masterItem->update([
-                'selling_price' => $validated['new_selling_price'],
-                'updated_by' => $request->user()->id,
+                'selling_price' => $newPrice,
+                'updated_by' => $userId,
             ]);
 
             PriceHistory::query()->create([
                 'master_item_id' => $masterItem->id,
                 'previous_price' => $previousPrice,
-                'new_price' => $validated['new_selling_price'],
-                'changed_by' => $request->user()->id,
-                'note' => $validated['review_note'] ?? null,
+                'new_price' => $newPrice,
+                'changed_by' => $userId,
+                'note' => $reviewNote,
                 'effective_at' => now(),
             ]);
 
@@ -75,7 +134,7 @@ class PriceReviewTaskController extends Controller
                 : 'price_updated_up';
 
             $this->notificationService->notifyRoles(
-                [\App\Models\Role::SALES_USER, \App\Models\Role::ADMIN],
+                [Role::SALES_USER, Role::ADMIN],
                 $notificationType,
                 'Perubahan Harga',
                 $notificationType === 'price_updated_down'
@@ -89,15 +148,11 @@ class PriceReviewTaskController extends Controller
 
         $priceReviewTask->update([
             'status' => PriceReviewTask::STATUS_REVIEWED,
-            'review_note' => $validated['review_note'] ?? null,
-            'reviewed_by' => $request->user()->id,
+            'review_note' => $reviewNote,
+            'reviewed_by' => $userId,
             'reviewed_at' => now(),
         ]);
 
-        return redirect()
-            ->route('price-review-tasks.show', $priceReviewTask)
-            ->with('status', $priceChanged
-                ? __('messages.price_review_updated_price')
-                : __('messages.price_review_kept_price'));
+        return $priceChanged;
     }
 }

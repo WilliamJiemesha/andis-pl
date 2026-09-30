@@ -47,7 +47,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/master-items', [MasterItemController::class, 'store'])->name('master-items.store');
         Route::get('/master-items/{master_item}/edit', [MasterItemController::class, 'edit'])->name('master-items.edit');
         Route::put('/master-items/{master_item}', [MasterItemController::class, 'update'])->name('master-items.update');
+        Route::patch('/master-items/{master_item}/status', [MasterItemController::class, 'updateStatus'])->name('master-items.update-status');
         Route::get('/price-review-tasks', [PriceReviewTaskController::class, 'index'])->name('price-review-tasks.index');
+        Route::post('/price-review-tasks/batch-review', [PriceReviewTaskController::class, 'batchReview'])->name('price-review-tasks.batch-review');
         Route::get('/price-review-tasks/{price_review_task}', [PriceReviewTaskController::class, 'show'])->name('price-review-tasks.show');
         Route::post('/price-review-tasks/{price_review_task}/review', [PriceReviewTaskController::class, 'review'])->name('price-review-tasks.review');
     });

@@ -103,6 +103,91 @@ for (const closer of modalClosers) {
     });
 }
 
+const infoPopovers = document.querySelectorAll('[data-info-popover]');
+
+for (const popover of infoPopovers) {
+    const toggle = popover.querySelector('[data-info-popover-toggle]');
+    const panel = popover.querySelector('[data-info-popover-panel]');
+    let pinned = false;
+
+    if (!(toggle instanceof HTMLElement) || !(panel instanceof HTMLElement)) {
+        continue;
+    }
+
+    const show = () => {
+        panel.hidden = false;
+        toggle.setAttribute('aria-expanded', 'true');
+    };
+
+    const hide = () => {
+        panel.hidden = true;
+        toggle.setAttribute('aria-expanded', 'false');
+        pinned = false;
+    };
+
+    popover.addEventListener('mouseenter', show);
+    popover.addEventListener('mouseleave', () => {
+        if (! pinned) {
+            hide();
+        }
+    });
+
+    toggle.addEventListener('click', (event) => {
+        event.stopPropagation();
+        pinned = ! pinned;
+        if (pinned) {
+            show();
+        } else {
+            hide();
+        }
+    });
+
+    panel.addEventListener('click', (event) => {
+        event.stopPropagation();
+        hide();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (! popover.contains(event.target)) {
+            hide();
+        }
+    });
+}
+
+const priceReviewBatchForm = document.querySelector('[data-price-review-batch-form]');
+const priceReviewEditToggle = document.querySelector('[data-price-review-edit-toggle]');
+const priceReviewCancel = document.querySelector('[data-price-review-cancel]');
+const priceReviewSubmit = document.querySelector('[data-price-review-submit]');
+
+if (priceReviewBatchForm instanceof HTMLFormElement && priceReviewEditToggle instanceof HTMLElement) {
+    const editParts = document.querySelectorAll('[data-price-review-edit]');
+    const normalParts = document.querySelectorAll('[data-price-review-normal]');
+
+    const setPriceReviewEditMode = (editing) => {
+        for (const part of editParts) {
+            part.classList.toggle('hidden', ! editing);
+        }
+
+        for (const part of normalParts) {
+            part.classList.toggle('hidden', editing);
+        }
+
+        priceReviewEditToggle.classList.toggle('hidden', editing);
+        priceReviewSubmit?.classList.toggle('hidden', ! editing);
+        priceReviewCancel?.classList.toggle('hidden', ! editing);
+
+        if (editing) {
+            const firstInput = priceReviewBatchForm.querySelector('input[data-currency-input]');
+            if (firstInput instanceof HTMLInputElement) {
+                firstInput.focus();
+            }
+        }
+    };
+
+    priceReviewEditToggle.addEventListener('click', () => setPriceReviewEditMode(true));
+    priceReviewCancel?.addEventListener('click', () => setPriceReviewEditMode(false));
+}
+
 document.addEventListener('click', (event) => {
     const target = event.target;
 

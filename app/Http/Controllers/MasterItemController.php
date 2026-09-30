@@ -109,7 +109,6 @@ class MasterItemController extends Controller
             'updater',
             'priceHistories' => fn ($builder) => $builder->with('changer')->latest('effective_at')->limit(5),
             'costHistories' => fn ($builder) => $builder->with(['recorder', 'invoiceEntry'])->latest('recorded_at')->limit(5),
-            'incomingCheckTasks' => fn ($builder) => $builder->latest('updated_at')->limit(5),
         ]);
 
         return view('master-items.show', [
@@ -168,6 +167,22 @@ class MasterItemController extends Controller
         return redirect()
             ->route('master-items.show', $masterItem)
             ->with('status', __('messages.master_item_updated'));
+    }
+
+    public function updateStatus(Request $request, MasterItem $masterItem): RedirectResponse
+    {
+        $validated = $request->validate([
+            'is_active' => ['required', 'boolean'],
+        ]);
+
+        $masterItem->update([
+            'is_active' => (bool) $validated['is_active'],
+            'updated_by' => $request->user()->id,
+        ]);
+
+        return redirect()
+            ->route('master-items.show', $masterItem)
+            ->with('status', __('messages.master_item_status_updated'));
     }
 
     public function destroy(MasterItem $masterItem): RedirectResponse

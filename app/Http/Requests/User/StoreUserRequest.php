@@ -12,6 +12,17 @@ class StoreUserRequest extends FormRequest
         return $this->user()?->hasRole('admin') ?? false;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'roles' => collect($this->input('roles', []))
+                ->filter(fn ($roleId) => filled($roleId))
+                ->map(fn ($roleId) => (int) $roleId)
+                ->values()
+                ->all(),
+        ]);
+    }
+
     public function rules(): array
     {
         return [
